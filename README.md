@@ -8,3 +8,5 @@ YouTube search/discovery (Data API v3) + embedded IFrame playback, library, loca
 
 Notes: YouTube playback must stay visible (no background/audio-only); no quality picker is shown by the app
 (the embedded player's own settings menu is used); YouTube items are not downloadable.
+
+To rebuild after changing the GitHub Actions secret, run the **Build RoohuX APK** workflow manually or push a commit to `main`. The secret must be named `YT_API_KEY`.
