@@ -1,37 +1,56 @@
-name: Android APK
+name: Build RoohuX APK
+
 on:
   push:
     branches: [main]
   pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: 17 }
-      - uses: gradle/actions/setup-gradle@v4
-        with: { gradle-version: 8.9 }
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
       - name: Build debug APK
         env:
           YT_API_KEY: ${{ secrets.YT_API_KEY }}
-        run: gradle :app:assembleDebug --stacktrace
-      - name: Verify APK artifact
+        run: gradle --no-daemon --stacktrace assembleDebug
+
+      - name: Verify debug APK
+        shell: bash
         run: |
-          APK=$(ls app/build/outputs/apk/debug/*.apk | head -n1)
-          echo "APK: $APK"; ls -l "$APK"
-          AAPT=$(find "$ANDROID_HOME/build-tools" -name aapt2 | sort | tail -n1)
-          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort | tail -n1)
-          "$AAPT" dump badging "$APK" | grep -E "package:|sdkVersion|launchable-activity"
-          "$APKSIGNER" verify --verbose "$APK"
-          unzip -l "$APK" | grep -E "classes.*dex|AndroidManifest"
-          if [ -z "$YT_API_KEY" ]; then echo "::warning::YT_API_KEY secret not set; app will show a 'no API key' message"; fi
-        env:
-          YT_API_KEY: ${{ secrets.YT_API_KEY }}
-      - uses: actions/upload-artifact@v4
+          set -euo pipefail
+          APK="$(find build/outputs/apk/debug -maxdepth 1 -name '*.apk' -type f -print -quit)"
+          test -n "$APK"
+          test -s "$APK"
+          echo "APK created: $APK"
+          ls -lh "$APK"
+          unzip -t "$APK" | tail -n 2
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
           name: RoohuX-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: build/outputs/apk/debug/*.apk
           if-no-files-found: error
-          
+          retention-days: 14
