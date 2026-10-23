@@ -28,6 +28,15 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Prepare Android Kotlin source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p src/main/java/com/roohux/app
+          cp ./*.kt src/main/java/com/roohux/app/
+          echo "Kotlin files staged:"
+          ls -l src/main/java/com/roohux/app/
+
       - name: Build debug APK
         env:
           YT_API_KEY: ${{ secrets.YT_API_KEY }}
